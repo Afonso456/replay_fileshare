@@ -6,6 +6,7 @@
 <title>RELAY — P2P File Transfer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
     --bg: #0a0a0a;
@@ -37,17 +38,10 @@
     overflow-x: hidden;
   }
 
-  /* Scanline overlay */
   body::before {
     content: '';
     position: fixed; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
     pointer-events: none;
     z-index: 9999;
   }
@@ -62,309 +56,74 @@
     gap: 1rem;
   }
 
-  .logo {
-    font-family: var(--sans);
-    font-weight: 800;
-    font-size: 2rem;
-    letter-spacing: -0.03em;
-    color: var(--accent);
-    text-shadow: 0 0 24px var(--accent-dim);
-  }
+  .logo { font-family: var(--sans); font-weight: 800; font-size: 2rem; letter-spacing: -0.03em; color: var(--accent); text-shadow: 0 0 24px var(--accent-dim); }
+  .logo-sub { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; }
+  .tagline { margin-left: auto; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; text-align: right; line-height: 1.6; }
 
-  .logo-sub {
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
+  main { width: 100%; max-width: 760px; padding-top: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
 
-  .tagline {
-    margin-left: auto;
-    font-size: 0.65rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    text-align: right;
-    line-height: 1.6;
-  }
-
-  main {
-    width: 100%;
-    max-width: 760px;
-    padding-top: 2.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  /* Cards */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 1.75rem 2rem;
-    position: relative;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 3px; height: 100%;
-    background: var(--accent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
+  .card { background: var(--surface); border: 1px solid var(--border); padding: 1.75rem 2rem; position: relative; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent); opacity: 0; transition: opacity 0.3s; }
   .card.active::before { opacity: 1; }
 
-  .card-label {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.25em;
-    color: var(--accent);
-    margin-bottom: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .card-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+  .card-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.25em; color: var(--accent); margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
+  .card-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  /* Room section */
-  .room-row {
-    display: flex;
-    gap: 0.75rem;
-    align-items: stretch;
-  }
+  .room-row { display: flex; gap: 0.75rem; align-items: stretch; }
 
   input[type="text"] {
-    flex: 1;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 1rem;
-    padding: 0.75rem 1rem;
-    outline: none;
-    letter-spacing: 0.1em;
-    transition: border-color 0.2s;
+    flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 1rem; padding: 0.75rem 1rem; outline: none;
+    letter-spacing: 0.1em; transition: border-color 0.2s;
   }
-  input[type="text"]:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent-dim);
-  }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-dim); }
   input[type="text"]::placeholder { color: var(--muted); }
 
   button {
-    background: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    font-family: var(--mono);
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.75rem 1.5rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-    white-space: nowrap;
+    background: transparent; border: 1px solid var(--accent); color: var(--accent);
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 700; padding: 0.75rem 1.5rem;
+    letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s; white-space: nowrap;
   }
-  button:hover {
-    background: var(--accent);
-    color: var(--bg);
-    box-shadow: 0 0 20px var(--accent-dim);
-  }
-  button:disabled {
-    border-color: var(--muted);
-    color: var(--muted);
-    cursor: not-allowed;
-    background: transparent;
-    box-shadow: none;
-  }
+  button:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 20px var(--accent-dim); }
+  button:disabled { border-color: var(--muted); color: var(--muted); cursor: not-allowed; background: transparent; box-shadow: none; }
 
-  .btn-secondary {
-    border-color: var(--border);
-    color: var(--text-dim);
-  }
-  .btn-secondary:hover {
-    background: var(--border);
-    color: var(--text);
-    box-shadow: none;
-  }
+  .btn-secondary { border-color: var(--border); color: var(--text-dim); }
+  .btn-secondary:hover { background: var(--border); color: var(--text); box-shadow: none; }
 
-  .room-id-display {
-    font-size: 1.5rem;
-    letter-spacing: 0.3em;
-    color: var(--accent);
-    text-shadow: 0 0 16px var(--accent-dim);
-    padding: 1rem 0 0.5rem;
-    font-weight: 700;
-  }
+  .room-id-display { font-size: 1.5rem; letter-spacing: 0.3em; color: var(--accent); text-shadow: 0 0 16px var(--accent-dim); padding: 1rem 0 0.5rem; font-weight: 700; }
+  .hint { font-size: 0.7rem; color: var(--text-dim); line-height: 1.8; margin-top: 0.5rem; }
 
-  .hint {
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    line-height: 1.8;
-    margin-top: 0.5rem;
-  }
-
-  /* Status bar */
-  .status-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    letter-spacing: 0.05em;
-  }
-
-  .status-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    flex-shrink: 0;
-    transition: background 0.3s;
-  }
-  .status-dot.green {
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-    animation: pulse 2s infinite;
-  }
+  .status-bar { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: var(--bg); border: 1px solid var(--border); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.05em; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+  .status-dot.green { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
   .status-dot.yellow { background: var(--warn); }
   .status-dot.red { background: var(--danger); }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-  /* Drop zone */
-  .drop-zone {
-    border: 1px dashed var(--border);
-    padding: 2.5rem 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: var(--accent-glow);
-  }
-  .drop-zone input[type="file"] {
-    position: absolute; inset: 0;
-    opacity: 0; cursor: pointer;
-    width: 100%; height: 100%;
-  }
+  .drop-zone { border: 1px dashed var(--border); padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; overflow: hidden; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-glow); }
+  .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.5; }
+  .drop-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; }
 
-  .drop-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.75rem;
-    display: block;
-    opacity: 0.5;
-  }
+  .send-btns { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
 
-  .drop-label {
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-  }
-
-  /* File queue */
-  .file-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-  }
-
-  .file-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    font-size: 0.75rem;
-  }
-
-  .file-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--text);
-  }
-
-  .file-size {
-    color: var(--text-dim);
-    flex-shrink: 0;
-  }
-
-  .file-remove {
-    background: none;
-    border: none;
-    color: var(--danger);
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 0 0.25rem;
-    line-height: 1;
-    flex-shrink: 0;
-  }
+  .file-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
+  .file-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: var(--bg); border: 1px solid var(--border); font-size: 0.75rem; }
+  .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+  .file-size { color: var(--text-dim); flex-shrink: 0; }
+  .file-type { font-size: 0.6rem; padding: 0.15rem 0.4rem; border: 1px solid var(--border); color: var(--muted); flex-shrink: 0; }
+  .file-remove { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 0 0.25rem; line-height: 1; flex-shrink: 0; }
   .file-remove:hover { background: none; color: var(--danger); box-shadow: none; }
 
-  /* Progress */
-  .progress-wrap {
-    margin-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
+  .progress-wrap { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+  .progress-track { height: 4px; background: var(--border); overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); box-shadow: 0 0 8px var(--accent); width: 0%; transition: width 0.1s linear; }
 
-  .progress-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.65rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .progress-track {
-    height: 4px;
-    background: var(--border);
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-    width: 0%;
-    transition: width 0.1s linear;
-  }
-
-  /* Log */
-  .log {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    padding: 1rem;
-    font-size: 0.65rem;
-    color: var(--text-dim);
-    max-height: 140px;
-    overflow-y: auto;
-    line-height: 2;
-    letter-spacing: 0.03em;
-  }
-
+  .log { background: var(--bg); border: 1px solid var(--border); padding: 1rem; font-size: 0.65rem; color: var(--text-dim); max-height: 140px; overflow-y: auto; line-height: 2; letter-spacing: 0.03em; }
   .log-entry { display: flex; gap: 0.75rem; }
   .log-time { color: var(--muted); flex-shrink: 0; }
   .log-msg.ok { color: var(--accent); }
@@ -372,64 +131,21 @@
   .log-msg.err { color: var(--danger); }
   .log-msg.info { color: var(--text-dim); }
 
-  /* Received files */
-  .dl-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    background: var(--bg);
-    border: 1px solid var(--accent);
-    font-size: 0.75rem;
-    animation: fadeIn 0.3s ease;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
+  .dl-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: var(--bg); border: 1px solid var(--accent); font-size: 0.75rem; animation: fadeIn 0.3s ease; margin-bottom: 0.5rem; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   .dl-name { flex: 1; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dl-size { color: var(--text-dim); flex-shrink: 0; }
-  .dl-btn {
-    padding: 0.35rem 0.9rem;
-    font-size: 0.65rem;
-  }
+  .dl-btn { padding: 0.35rem 0.9rem; font-size: 0.65rem; }
 
-  /* Hidden sections */
   .section { display: none; }
   .section.visible { display: block; }
 
-  /* Divider */
-  .or-divider {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    font-size: 0.6rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-  }
-  .or-divider::before, .or-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+  .or-divider { display: flex; align-items: center; gap: 1rem; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.2em; }
+  .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  footer {
-    width: 100%;
-    max-width: 760px;
-    margin-top: 3rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border);
-    font-size: 0.6rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    display: flex;
-    justify-content: space-between;
-  }
+  footer { width: 100%; max-width: 760px; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: flex; justify-content: space-between; }
+
+  .zipping-notice { font-size: 0.7rem; color: var(--warn); margin-top: 0.5rem; display: none; }
 </style>
 </head>
 <body>
@@ -439,24 +155,19 @@
     <div class="logo">RELAY</div>
     <div class="logo-sub">P2P File Transfer</div>
   </div>
-  <div class="tagline">
-    Direct. Encrypted.<br>No server storage.
-  </div>
+  <div class="tagline">Direct. Encrypted.<br>No server storage.</div>
 </header>
 
 <main>
 
-  <!-- Status bar -->
   <div class="status-bar">
     <div class="status-dot" id="statusDot"></div>
     <span id="statusText">Not connected</span>
   </div>
 
-  <!-- Room setup card -->
+  <!-- Room card -->
   <div class="card active" id="roomCard">
     <div class="card-label">01 — Room</div>
-
-    <!-- Create -->
     <div id="createSection">
       <button id="createBtn" onclick="createRoom()">Generate Room Code</button>
       <div id="roomDisplay" style="display:none">
@@ -464,10 +175,7 @@
         <p class="hint">Share this code with the other person. Waiting for them to join&hellip;</p>
       </div>
     </div>
-
     <div class="or-divider" style="margin:1.5rem 0">or</div>
-
-    <!-- Join -->
     <div class="room-row">
       <input type="text" id="joinInput" placeholder="Enter room code" maxlength="8" style="text-transform:uppercase;letter-spacing:0.3em">
       <button onclick="joinRoom()">Join</button>
@@ -476,7 +184,7 @@
 
   <!-- Send card -->
   <div class="card section" id="sendCard">
-    <div class="card-label">02 — Send Files</div>
+    <div class="card-label">02 — Send Files &amp; Folders</div>
 
     <div class="drop-zone" id="dropZone">
       <span class="drop-icon">⬆</span>
@@ -484,12 +192,15 @@
       <input type="file" id="fileInput" multiple onchange="handleFileSelect(this.files)">
     </div>
 
-    <div class="file-list" id="fileList"></div>
-
-    <div style="margin-top:1rem; display:flex; gap:0.75rem;">
+    <div class="send-btns">
       <button id="sendBtn" onclick="sendFiles()" disabled>Send All</button>
+      <button onclick="openFolderPicker()" id="folderBtn" style="border-color:var(--warn);color:var(--warn)">+ Add Folder</button>
       <button class="btn-secondary" onclick="clearFiles()">Clear</button>
     </div>
+    <input type="file" id="folderInput" webkitdirectory multiple style="display:none" onchange="handleFolderSelect(this)">
+
+    <div class="zipping-notice" id="zippingNotice">⏳ Zipping folder, please wait…</div>
+    <div class="file-list" id="fileList"></div>
 
     <div class="progress-wrap" id="sendProgress" style="display:none">
       <div class="progress-header">
@@ -513,7 +224,7 @@
       <div class="progress-track"><div class="progress-fill" id="recvProgressFill"></div></div>
     </div>
 
-    <div class="file-list" id="recvFileList" style="margin-top:1rem"></div>
+    <div id="recvFileList" style="margin-top:1rem"></div>
   </div>
 
   <!-- Log -->
@@ -525,32 +236,51 @@
 </main>
 
 <footer>
-  <span>RELAY v1.0</span>
+  <span>RELAY v2.0</span>
   <span>File data never touches the server</span>
 </footer>
 
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
-const WS_URL = `ws://${location.host}/ws`;
 const CHUNK_SIZE = 16 * 1024; // 16 KB
 
+// Dynamic WebSocket URL: wss:// on HTTPS, ws:// on HTTP
+const WS_PROTOCOL = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = `${WS_PROTOCOL}//${location.host}/ws`;
+
+// ICE config with STUN + free TURN relay for cross-network support
 const ICE_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
+    { urls: 'stun:stun1.l.google.com:19302' },
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
   ]
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let ws = null;
-let pc = null;           // RTCPeerConnection
-let dc = null;           // RTCDataChannel (sender creates, receiver uses)
-let role = null;         // 'initiator' | 'receiver'
+let pc = null;
+let dc = null;
+let role = null;
 let roomId = null;
-let pendingFiles = [];   // Files queued to send
-let recvMeta = null;     // Current incoming file metadata
-let recvBuffers = [];    // Chunks received for current file
-let recvReceived = 0;    // Bytes received
+let pendingFiles = []; // { file: File, label: string, isZip: bool }
+let recvMeta = null;
+let recvBuffers = [];
+let recvReceived = 0;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function log(msg, type = 'info') {
@@ -565,8 +295,7 @@ function log(msg, type = 'info') {
 
 function setStatus(text, dotClass = '') {
   document.getElementById('statusText').textContent = text;
-  const dot = document.getElementById('statusDot');
-  dot.className = 'status-dot ' + dotClass;
+  document.getElementById('statusDot').className = 'status-dot ' + dotClass;
 }
 
 function formatBytes(b) {
@@ -581,9 +310,7 @@ function randCode() {
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
-function showSection(id) {
-  document.getElementById(id).classList.add('visible');
-}
+function showSection(id) { document.getElementById(id).classList.add('visible'); }
 
 // ─── Room ─────────────────────────────────────────────────────────────────────
 function createRoom() {
@@ -612,38 +339,31 @@ function connectSignaling(room) {
 
   ws.onmessage = async (e) => {
     const msg = JSON.parse(e.data);
-
     switch (msg.type) {
       case 'role':
         role = msg.role;
         log(`Role assigned: ${role}`, 'info');
         break;
-
       case 'peer_joined':
         log('Peer joined the room.', 'ok');
-        setStatus(`Peer found — connecting`, 'yellow');
+        setStatus('Peer found — connecting', 'yellow');
         if (role === 'initiator') await startWebRTC();
         break;
-
       case 'offer':
         await handleOffer(msg.sdp);
         break;
-
       case 'answer':
         await handleAnswer(msg.sdp);
         break;
-
       case 'ice-candidate':
         if (pc && msg.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+          try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch(e) {}
         }
         break;
-
       case 'peer_disconnected':
         log('Peer disconnected.', 'warn');
         setStatus('Peer disconnected', 'red');
         break;
-
       case 'error':
         log(`Server error: ${msg.message}`, 'err');
         break;
@@ -661,61 +381,50 @@ function signal(obj) {
 // ─── WebRTC ───────────────────────────────────────────────────────────────────
 async function startWebRTC() {
   pc = new RTCPeerConnection(ICE_CONFIG);
-
-  // Initiator creates the data channel
   dc = pc.createDataChannel('fileTransfer', { ordered: true });
   setupDataChannel(dc);
 
   pc.onicecandidate = (e) => {
     if (e.candidate) signal({ type: 'ice-candidate', candidate: e.candidate });
   };
-
-  pc.onconnectionstatechange = () => handleConnectionState();
+  pc.onconnectionstatechange = handleConnectionState;
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  signal({ type: 'offer', sdp: pc.localDescription });
+  signal({ type: 'offer', sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
   log('WebRTC offer sent.', 'info');
 }
 
 async function handleOffer(sdp) {
   pc = new RTCPeerConnection(ICE_CONFIG);
-
   pc.onicecandidate = (e) => {
     if (e.candidate) signal({ type: 'ice-candidate', candidate: e.candidate });
   };
+  pc.ondatachannel = (e) => { dc = e.channel; setupDataChannel(dc); };
+  pc.onconnectionstatechange = handleConnectionState;
 
-  pc.ondatachannel = (e) => {
-    dc = e.channel;
-    setupDataChannel(dc);
-    log('Data channel received.', 'info');
-  };
-
-  pc.onconnectionstatechange = () => handleConnectionState();
-
-  await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
+  await pc.setRemoteDescription(new RTCSessionDescription(sdp));
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
-  signal({ type: 'answer', sdp: pc.localDescription });
+  signal({ type: 'answer', sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
   log('WebRTC answer sent.', 'info');
 }
 
 async function handleAnswer(sdp) {
-  await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+  await pc.setRemoteDescription(new RTCSessionDescription(sdp));
   log('WebRTC answer received.', 'info');
 }
 
 function handleConnectionState() {
   const state = pc.connectionState;
   log(`Connection state: ${state}`, state === 'connected' ? 'ok' : 'info');
-
   if (state === 'connected') {
     setStatus(`Connected to peer in room ${roomId}`, 'green');
     document.getElementById('roomCard').classList.remove('active');
-
     if (role === 'initiator') {
       showSection('sendCard');
       document.getElementById('sendCard').classList.add('active');
+      updateSendBtn();
     } else {
       showSection('recvCard');
       document.getElementById('recvCard').classList.add('active');
@@ -728,38 +437,26 @@ function handleConnectionState() {
 // ─── Data Channel ─────────────────────────────────────────────────────────────
 function setupDataChannel(channel) {
   channel.binaryType = 'arraybuffer';
-
   channel.onopen = () => {
     log('Data channel open — ready to transfer.', 'ok');
-    if (role === 'initiator') {
-      document.getElementById('sendBtn').disabled = false;
-    }
+    updateSendBtn();
   };
-
   channel.onclose = () => log('Data channel closed.', 'warn');
-
   channel.onerror = (e) => log(`Data channel error: ${e.error?.message || e}`, 'err');
-
   channel.onmessage = (e) => {
     if (typeof e.data === 'string') {
       const msg = JSON.parse(e.data);
-
       if (msg.type === 'file-start') {
         recvMeta = msg;
         recvBuffers = [];
         recvReceived = 0;
         log(`Receiving: ${msg.name} (${formatBytes(msg.size)})`, 'info');
-
         document.getElementById('recvProgress').style.display = 'block';
         document.getElementById('recvProgressLabel').textContent = msg.name;
         updateRecvProgress(0, msg.size);
       }
-
-      if (msg.type === 'file-end') {
-        finishReceiving();
-      }
+      if (msg.type === 'file-end') finishReceiving();
     } else {
-      // Binary chunk
       recvBuffers.push(e.data);
       recvReceived += e.data.byteLength;
       if (recvMeta) updateRecvProgress(recvReceived, recvMeta.size);
@@ -767,78 +464,91 @@ function setupDataChannel(channel) {
   };
 }
 
-// ─── Sending ──────────────────────────────────────────────────────────────────
+// ─── File / Folder Picking ────────────────────────────────────────────────────
 function handleFileSelect(files) {
-  for (const f of files) pendingFiles.push(f);
+  for (const f of files) pendingFiles.push({ file: f, label: f.name, isZip: false });
   renderFileList();
   updateSendBtn();
+}
+
+function openFolderPicker() {
+  document.getElementById('folderInput').click();
+}
+
+async function handleFolderSelect(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+
+  // Get folder name from the first file's path
+  const folderName = files[0].webkitRelativePath.split('/')[0];
+  const zipName = folderName + '.zip';
+
+  document.getElementById('zippingNotice').style.display = 'block';
+  log(`Zipping folder "${folderName}" (${files.length} files)…`, 'info');
+
+  const zip = new JSZip();
+  for (const f of files) {
+    zip.file(f.webkitRelativePath, f);
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  const zipFile = new File([blob], zipName, { type: 'application/zip' });
+
+  document.getElementById('zippingNotice').style.display = 'none';
+  pendingFiles.push({ file: zipFile, label: `📁 ${folderName} → ${zipName}`, isZip: true });
+  renderFileList();
+  updateSendBtn();
+  log(`Folder zipped: ${zipName} (${formatBytes(blob.size)})`, 'ok');
+
+  // Reset so same folder can be re-selected
+  input.value = '';
 }
 
 function renderFileList() {
   const el = document.getElementById('fileList');
   el.innerHTML = '';
-  pendingFiles.forEach((f, i) => {
+  pendingFiles.forEach((item, i) => {
     el.innerHTML += `
       <div class="file-item">
-        <span class="file-name">${f.name}</span>
-        <span class="file-size">${formatBytes(f.size)}</span>
+        <span class="file-name">${item.label}</span>
+        <span class="file-size">${formatBytes(item.file.size)}</span>
+        ${item.isZip ? '<span class="file-type">ZIP</span>' : ''}
         <button class="file-remove" onclick="removeFile(${i})">✕</button>
       </div>`;
   });
 }
 
-function removeFile(i) {
-  pendingFiles.splice(i, 1);
-  renderFileList();
-  updateSendBtn();
-}
-
-function clearFiles() {
-  pendingFiles = [];
-  renderFileList();
-  updateSendBtn();
-}
+function removeFile(i) { pendingFiles.splice(i, 1); renderFileList(); updateSendBtn(); }
+function clearFiles() { pendingFiles = []; renderFileList(); updateSendBtn(); }
 
 function updateSendBtn() {
-  const btn = document.getElementById('sendBtn');
-  btn.disabled = pendingFiles.length === 0 || (dc && dc.readyState !== 'open');
+  document.getElementById('sendBtn').disabled = pendingFiles.length === 0 || !dc || dc.readyState !== 'open';
 }
 
+// ─── Sending ──────────────────────────────────────────────────────────────────
 async function sendFiles() {
   if (!dc || dc.readyState !== 'open') { log('Not connected.', 'err'); return; }
   document.getElementById('sendBtn').disabled = true;
   document.getElementById('sendProgress').style.display = 'block';
 
   for (let i = 0; i < pendingFiles.length; i++) {
-    const file = pendingFiles[i];
-    log(`Sending ${file.name}…`, 'info');
-
-    // Metadata
+    const { file, label } = pendingFiles[i];
+    log(`Sending ${label}…`, 'info');
     dc.send(JSON.stringify({ type: 'file-start', name: file.name, size: file.size, index: i, total: pendingFiles.length }));
 
     const buf = await file.arrayBuffer();
     let offset = 0;
-    let sentBytes = 0;
 
     while (offset < buf.byteLength) {
-      // Back-pressure: wait if buffer is too full
-      while (dc.bufferedAmount > CHUNK_SIZE * 16) {
-        await new Promise(r => setTimeout(r, 10));
-      }
-
+      while (dc.bufferedAmount > CHUNK_SIZE * 16) await new Promise(r => setTimeout(r, 10));
       const end = Math.min(offset + CHUNK_SIZE, buf.byteLength);
       dc.send(buf.slice(offset, end));
-      sentBytes += end - offset;
       offset = end;
-
-      updateSendProgress(sentBytes, buf.byteLength, file.name, i + 1, pendingFiles.length);
+      updateSendProgress(offset, buf.byteLength, file.name, i + 1, pendingFiles.length);
     }
 
-    // End signal
     dc.send(JSON.stringify({ type: 'file-end', name: file.name }));
-    log(`Sent: ${file.name}`, 'ok');
-
-    // Small gap between files
+    log(`Sent: ${label}`, 'ok');
     await new Promise(r => setTimeout(r, 100));
   }
 
@@ -848,10 +558,9 @@ async function sendFiles() {
   document.getElementById('sendProgressPct').textContent = '100%';
 }
 
-function updateSendProgress(sent, total, name, fileIdx, fileCount) {
+function updateSendProgress(sent, total, name, idx, count) {
   const pct = Math.round((sent / total) * 100);
-  document.getElementById('sendProgressLabel').textContent =
-    `[${fileIdx}/${fileCount}] ${name}`;
+  document.getElementById('sendProgressLabel').textContent = `[${idx}/${count}] ${name}`;
   document.getElementById('sendProgressPct').textContent = pct + '%';
   document.getElementById('sendProgressFill').style.width = pct + '%';
 }
@@ -866,42 +575,29 @@ function updateRecvProgress(received, total) {
 function finishReceiving() {
   const blob = new Blob(recvBuffers);
   const url = URL.createObjectURL(blob);
+  const isZip = recvMeta.name.endsWith('.zip');
 
   const el = document.getElementById('recvFileList');
   const item = document.createElement('div');
   item.className = 'dl-item';
   item.innerHTML = `
-    <span class="dl-name">${recvMeta.name}</span>
+    <span class="dl-name">${isZip ? '📁 ' : ''}${recvMeta.name}</span>
     <span class="dl-size">${formatBytes(recvMeta.size)}</span>
-    <a href="${url}" download="${recvMeta.name}">
-      <button class="dl-btn">↓ Save</button>
-    </a>`;
+    <a href="${url}" download="${recvMeta.name}"><button class="dl-btn">↓ Save${isZip ? ' & Extract' : ''}</button></a>`;
   el.appendChild(item);
 
-  log(`Received: ${recvMeta.name} — ready to save.`, 'ok');
+  log(`Received: ${recvMeta.name}${isZip ? ' (extract after saving)' : ''} — ready to save.`, 'ok');
   updateRecvProgress(recvMeta.size, recvMeta.size);
-
-  recvMeta = null;
-  recvBuffers = [];
-  recvReceived = 0;
+  recvMeta = null; recvBuffers = []; recvReceived = 0;
 }
 
 // ─── Drag & Drop ──────────────────────────────────────────────────────────────
 const dz = document.getElementById('dropZone');
-if (dz) {
-  dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dz.classList.remove('drag-over');
-    handleFileSelect(e.dataTransfer.files);
-  });
-}
+dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('drag-over'); handleFileSelect(e.dataTransfer.files); });
 
-// Join input: uppercase
-document.getElementById('joinInput').addEventListener('input', function() {
-  this.value = this.value.toUpperCase();
-});
+document.getElementById('joinInput').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
 </script>
 </body>
 </html>

@@ -6,8 +6,10 @@ The actual file data travels directly between browsers (P2P).
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 import json
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("p2p-fileshare")
@@ -35,13 +37,11 @@ async def signaling(websocket: WebSocket, room_id: str):
 
     log.info(f"Peer joined room '{room_id}' ({'initiator' if is_initiator else 'receiver'}). Room size: {len(rooms[room_id])}")
 
-    # Tell this peer its role
     await websocket.send_text(json.dumps({
         "type": "role",
         "role": "initiator" if is_initiator else "receiver"
     }))
 
-    # When the second peer joins, tell the initiator to start the WebRTC handshake
     if not is_initiator:
         initiator = rooms[room_id][0]
         await initiator.send_text(json.dumps({"type": "peer_joined"}))
@@ -50,8 +50,6 @@ async def signaling(websocket: WebSocket, room_id: str):
         while True:
             raw = await websocket.receive_text()
             msg = json.loads(raw)
-
-            # Relay signaling messages (offer, answer, ice-candidate) to the other peer
             others = [p for p in rooms[room_id] if p is not websocket]
             for peer in others:
                 await peer.send_text(raw)
@@ -68,10 +66,11 @@ async def signaling(websocket: WebSocket, room_id: str):
         log.info(f"Peer left room '{room_id}'.")
 
 
-# Serve the frontend
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("server:app", host="0.0.0.0", port=port)
