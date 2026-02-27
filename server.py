@@ -50,6 +50,13 @@ async def signaling(websocket: WebSocket, room_id: str):
         while True:
             raw = await websocket.receive_text()
             msg = json.loads(raw)
+
+            # Keepalive ping — respond with pong, don't relay to other peer
+            if msg.get("type") == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+                continue
+
+            # Relay all other signaling messages (offer, answer, ice-candidate) to the other peer
             others = [p for p in rooms[room_id] if p is not websocket]
             for peer in others:
                 await peer.send_text(raw)

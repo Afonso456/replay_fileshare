@@ -242,9 +242,9 @@ const WS_PROTOCOL = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_URL = `${WS_PROTOCOL}//${location.host}/ws`;
 
 // !! REPLACE the 3 values below with your Metered.ca credentials !!
-const METERED_HOST = 'global.relay.metered.ca'; // e.g. abcd1234.relay.metered.live
-const METERED_USER = 'afe6672c049a7e0583c0d9f6';
-const METERED_PASS = '3tPoihvuYgdfWwCN';
+const METERED_HOST = 'YOUR_APP.relay.metered.live'; // e.g. abcd1234.relay.metered.live
+const METERED_USER = 'YOUR_USERNAME';
+const METERED_PASS = 'YOUR_CREDENTIAL';
 
 const ICE_CONFIG = {
   iceServers: [
@@ -309,12 +309,21 @@ function joinRoom() {
 }
 
 // ─── Signaling ────────────────────────────────────────────────────────────────
+let pingInterval = null;
+
 function connectSignaling(room) {
   ws = new WebSocket(`${WS_URL}/${room}`);
 
   ws.onopen = () => {
     log(`Connected to signaling server. Room: ${room}`, 'ok');
     setStatus(`In room ${room} — waiting for peer`, 'yellow');
+
+    // Send a ping every 30s to prevent Railway killing idle WebSocket connections
+    pingInterval = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000);
   };
 
   ws.onmessage = async (e) => {
@@ -337,17 +346,31 @@ function connectSignaling(room) {
         }
         break;
       case 'peer_disconnected':
-        log('Peer disconnected.', 'warn');
-        setStatus('Peer disconnected', 'red');
+        // Only show disconnected if WebRTC is NOT already connected
+        // (avoids false alarm when signaling WS drops after transfer)
+        if (!pc || pc.connectionState !== 'connected') {
+          log('Peer disconnected.', 'warn');
+          setStatus('Peer disconnected', 'red');
+        }
         break;
+      case 'pong': break; // keepalive response, ignore
       case 'error':
         log(`Server error: ${msg.message}`, 'err');
         break;
     }
   };
 
-  ws.onerror = () => { log('WebSocket error.', 'err'); setStatus('Connection error', 'red'); };
-  ws.onclose = () => { log('Signaling connection closed.', 'warn'); };
+  ws.onerror = () => { log('WebSocket error.', 'err'); };
+  ws.onclose = () => {
+    clearInterval(pingInterval);
+    // Only log/show error if WebRTC isn't connected — otherwise transfer is still fine
+    if (!pc || pc.connectionState !== 'connected') {
+      log('Signaling connection closed.', 'warn');
+      setStatus('Signaling disconnected', 'yellow');
+    } else {
+      log('Signaling closed (WebRTC still active).', 'info');
+    }
+  };
 }
 
 function signal(obj) {
