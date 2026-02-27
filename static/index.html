@@ -185,23 +185,19 @@
   <!-- Send card -->
   <div class="card section" id="sendCard">
     <div class="card-label">02 — Send Files &amp; Folders</div>
-
     <div class="drop-zone" id="dropZone">
       <span class="drop-icon">⬆</span>
       <div class="drop-label">Drop files here or click to browse</div>
       <input type="file" id="fileInput" multiple onchange="handleFileSelect(this.files)">
     </div>
-
     <div class="send-btns">
       <button id="sendBtn" onclick="sendFiles()" disabled>Send All</button>
-      <button onclick="openFolderPicker()" id="folderBtn" style="border-color:var(--warn);color:var(--warn)">+ Add Folder</button>
+      <button onclick="openFolderPicker()" style="border-color:var(--warn);color:var(--warn)">+ Add Folder</button>
       <button class="btn-secondary" onclick="clearFiles()">Clear</button>
     </div>
     <input type="file" id="folderInput" webkitdirectory multiple style="display:none" onchange="handleFolderSelect(this)">
-
     <div class="zipping-notice" id="zippingNotice">⏳ Zipping folder, please wait…</div>
     <div class="file-list" id="fileList"></div>
-
     <div class="progress-wrap" id="sendProgress" style="display:none">
       <div class="progress-header">
         <span id="sendProgressLabel">Sending…</span>
@@ -215,7 +211,6 @@
   <div class="card section" id="recvCard">
     <div class="card-label">02 — Receive Files</div>
     <p class="hint" style="margin-bottom:1rem">Waiting for the sender to transmit files&hellip;</p>
-
     <div class="progress-wrap" id="recvProgress" style="display:none">
       <div class="progress-header">
         <span id="recvProgressLabel">Receiving…</span>
@@ -223,7 +218,6 @@
       </div>
       <div class="progress-track"><div class="progress-fill" id="recvProgressFill"></div></div>
     </div>
-
     <div id="recvFileList" style="margin-top:1rem"></div>
   </div>
 
@@ -242,45 +236,31 @@
 
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
-const CHUNK_SIZE = 16 * 1024; // 16 KB
+const CHUNK_SIZE = 16 * 1024;
 
-// Dynamic WebSocket URL: wss:// on HTTPS, ws:// on HTTP
 const WS_PROTOCOL = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_URL = `${WS_PROTOCOL}//${location.host}/ws`;
 
-// ICE config with STUN + free TURN relay for cross-network support
+// !! REPLACE the 3 values below with your Metered.ca credentials !!
+const METERED_HOST = 'global.relay.metered.ca'; // e.g. abcd1234.relay.metered.live
+const METERED_USER = 'afe6672c049a7e0583c0d9f6';
+const METERED_PASS = '3tPoihvuYgdfWwCN';
+
 const ICE_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    }
+    { urls: `turn:${METERED_HOST}:80`,  username: METERED_USER, credential: METERED_PASS },
+    { urls: `turn:${METERED_HOST}:443`, username: METERED_USER, credential: METERED_PASS },
+    { urls: `turns:${METERED_HOST}:443`, username: METERED_USER, credential: METERED_PASS },
+    { urls: `turn:${METERED_HOST}:80?transport=tcp`,  username: METERED_USER, credential: METERED_PASS },
   ]
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
-let ws = null;
-let pc = null;
-let dc = null;
-let role = null;
-let roomId = null;
-let pendingFiles = []; // { file: File, label: string, isZip: bool }
-let recvMeta = null;
-let recvBuffers = [];
-let recvReceived = 0;
+let ws = null, pc = null, dc = null, role = null, roomId = null;
+let pendingFiles = [];
+let recvMeta = null, recvBuffers = [], recvReceived = 0;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function log(msg, type = 'info') {
@@ -349,12 +329,8 @@ function connectSignaling(room) {
         setStatus('Peer found — connecting', 'yellow');
         if (role === 'initiator') await startWebRTC();
         break;
-      case 'offer':
-        await handleOffer(msg.sdp);
-        break;
-      case 'answer':
-        await handleAnswer(msg.sdp);
-        break;
+      case 'offer':  await handleOffer(msg.sdp); break;
+      case 'answer': await handleAnswer(msg.sdp); break;
       case 'ice-candidate':
         if (pc && msg.candidate) {
           try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch(e) {}
@@ -437,19 +413,14 @@ function handleConnectionState() {
 // ─── Data Channel ─────────────────────────────────────────────────────────────
 function setupDataChannel(channel) {
   channel.binaryType = 'arraybuffer';
-  channel.onopen = () => {
-    log('Data channel open — ready to transfer.', 'ok');
-    updateSendBtn();
-  };
+  channel.onopen = () => { log('Data channel open — ready to transfer.', 'ok'); updateSendBtn(); };
   channel.onclose = () => log('Data channel closed.', 'warn');
   channel.onerror = (e) => log(`Data channel error: ${e.error?.message || e}`, 'err');
   channel.onmessage = (e) => {
     if (typeof e.data === 'string') {
       const msg = JSON.parse(e.data);
       if (msg.type === 'file-start') {
-        recvMeta = msg;
-        recvBuffers = [];
-        recvReceived = 0;
+        recvMeta = msg; recvBuffers = []; recvReceived = 0;
         log(`Receiving: ${msg.name} (${formatBytes(msg.size)})`, 'info');
         document.getElementById('recvProgress').style.display = 'block';
         document.getElementById('recvProgressLabel').textContent = msg.name;
@@ -467,40 +438,26 @@ function setupDataChannel(channel) {
 // ─── File / Folder Picking ────────────────────────────────────────────────────
 function handleFileSelect(files) {
   for (const f of files) pendingFiles.push({ file: f, label: f.name, isZip: false });
-  renderFileList();
-  updateSendBtn();
+  renderFileList(); updateSendBtn();
 }
 
-function openFolderPicker() {
-  document.getElementById('folderInput').click();
-}
+function openFolderPicker() { document.getElementById('folderInput').click(); }
 
 async function handleFolderSelect(input) {
   const files = Array.from(input.files);
   if (!files.length) return;
-
-  // Get folder name from the first file's path
   const folderName = files[0].webkitRelativePath.split('/')[0];
   const zipName = folderName + '.zip';
-
   document.getElementById('zippingNotice').style.display = 'block';
   log(`Zipping folder "${folderName}" (${files.length} files)…`, 'info');
-
   const zip = new JSZip();
-  for (const f of files) {
-    zip.file(f.webkitRelativePath, f);
-  }
-
+  for (const f of files) zip.file(f.webkitRelativePath, f);
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   const zipFile = new File([blob], zipName, { type: 'application/zip' });
-
   document.getElementById('zippingNotice').style.display = 'none';
   pendingFiles.push({ file: zipFile, label: `📁 ${folderName} → ${zipName}`, isZip: true });
-  renderFileList();
-  updateSendBtn();
+  renderFileList(); updateSendBtn();
   log(`Folder zipped: ${zipName} (${formatBytes(blob.size)})`, 'ok');
-
-  // Reset so same folder can be re-selected
   input.value = '';
 }
 
@@ -520,7 +477,6 @@ function renderFileList() {
 
 function removeFile(i) { pendingFiles.splice(i, 1); renderFileList(); updateSendBtn(); }
 function clearFiles() { pendingFiles = []; renderFileList(); updateSendBtn(); }
-
 function updateSendBtn() {
   document.getElementById('sendBtn').disabled = pendingFiles.length === 0 || !dc || dc.readyState !== 'open';
 }
@@ -535,10 +491,8 @@ async function sendFiles() {
     const { file, label } = pendingFiles[i];
     log(`Sending ${label}…`, 'info');
     dc.send(JSON.stringify({ type: 'file-start', name: file.name, size: file.size, index: i, total: pendingFiles.length }));
-
     const buf = await file.arrayBuffer();
     let offset = 0;
-
     while (offset < buf.byteLength) {
       while (dc.bufferedAmount > CHUNK_SIZE * 16) await new Promise(r => setTimeout(r, 10));
       const end = Math.min(offset + CHUNK_SIZE, buf.byteLength);
@@ -546,7 +500,6 @@ async function sendFiles() {
       offset = end;
       updateSendProgress(offset, buf.byteLength, file.name, i + 1, pendingFiles.length);
     }
-
     dc.send(JSON.stringify({ type: 'file-end', name: file.name }));
     log(`Sent: ${label}`, 'ok');
     await new Promise(r => setTimeout(r, 100));
@@ -576,7 +529,6 @@ function finishReceiving() {
   const blob = new Blob(recvBuffers);
   const url = URL.createObjectURL(blob);
   const isZip = recvMeta.name.endsWith('.zip');
-
   const el = document.getElementById('recvFileList');
   const item = document.createElement('div');
   item.className = 'dl-item';
@@ -585,8 +537,7 @@ function finishReceiving() {
     <span class="dl-size">${formatBytes(recvMeta.size)}</span>
     <a href="${url}" download="${recvMeta.name}"><button class="dl-btn">↓ Save${isZip ? ' & Extract' : ''}</button></a>`;
   el.appendChild(item);
-
-  log(`Received: ${recvMeta.name}${isZip ? ' (extract after saving)' : ''} — ready to save.`, 'ok');
+  log(`Received: ${recvMeta.name} — ready to save.`, 'ok');
   updateRecvProgress(recvMeta.size, recvMeta.size);
   recvMeta = null; recvBuffers = []; recvReceived = 0;
 }
