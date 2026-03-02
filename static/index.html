@@ -9,68 +9,37 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --border: #222222;
-    --accent: #00ff88;
-    --accent-dim: #00ff8840;
-    --accent-glow: #00ff8820;
-    --muted: #444;
-    --text: #e8e8e8;
-    --text-dim: #666;
-    --danger: #ff4455;
-    --warn: #ffaa00;
-    --mono: 'Space Mono', monospace;
-    --sans: 'Syne', sans-serif;
+    --bg: #0a0a0a; --surface: #111111; --border: #222222;
+    --accent: #00ff88; --accent-dim: #00ff8840; --accent-glow: #00ff8820;
+    --muted: #444; --text: #e8e8e8; --text-dim: #666;
+    --danger: #ff4455; --warn: #ffaa00;
+    --mono: 'Space Mono', monospace; --sans: 'Syne', sans-serif;
   }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--mono);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 1rem 4rem;
-    overflow-x: hidden;
+    background: var(--bg); color: var(--text); font-family: var(--mono);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 0 1rem 4rem; overflow-x: hidden;
   }
-
   body::before {
-    content: '';
-    position: fixed; inset: 0;
+    content: ''; position: fixed; inset: 0;
     background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
-    pointer-events: none;
-    z-index: 9999;
+    pointer-events: none; z-index: 9999;
   }
-
   header {
-    width: 100%;
-    max-width: 760px;
-    padding: 2.5rem 0 2rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: baseline;
-    gap: 1rem;
+    width: 100%; max-width: 760px; padding: 2.5rem 0 2rem;
+    border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 1rem;
   }
-
   .logo { font-family: var(--sans); font-weight: 800; font-size: 2rem; letter-spacing: -0.03em; color: var(--accent); text-shadow: 0 0 24px var(--accent-dim); }
   .logo-sub { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; }
   .tagline { margin-left: auto; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; text-align: right; line-height: 1.6; }
-
   main { width: 100%; max-width: 760px; padding-top: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-
   .card { background: var(--surface); border: 1px solid var(--border); padding: 1.75rem 2rem; position: relative; }
   .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent); opacity: 0; transition: opacity 0.3s; }
   .card.active::before { opacity: 1; }
-
   .card-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.25em; color: var(--accent); margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
   .card-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
   .room-row { display: flex; gap: 0.75rem; align-items: stretch; }
-
   input[type="text"] {
     flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text);
     font-family: var(--mono); font-size: 1rem; padding: 0.75rem 1rem; outline: none;
@@ -78,7 +47,6 @@
   }
   input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-dim); }
   input[type="text"]::placeholder { color: var(--muted); }
-
   button {
     background: transparent; border: 1px solid var(--accent); color: var(--accent);
     font-family: var(--mono); font-size: 0.8rem; font-weight: 700; padding: 0.75rem 1.5rem;
@@ -87,29 +55,24 @@
   }
   button:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 20px var(--accent-dim); }
   button:disabled { border-color: var(--muted); color: var(--muted); cursor: not-allowed; background: transparent; box-shadow: none; }
-
+  .btn-warn { border-color: var(--warn); color: var(--warn); }
+  .btn-warn:hover { background: var(--warn); color: var(--bg); box-shadow: none; }
   .btn-secondary { border-color: var(--border); color: var(--text-dim); }
   .btn-secondary:hover { background: var(--border); color: var(--text); box-shadow: none; }
-
   .room-id-display { font-size: 1.5rem; letter-spacing: 0.3em; color: var(--accent); text-shadow: 0 0 16px var(--accent-dim); padding: 1rem 0 0.5rem; font-weight: 700; }
   .hint { font-size: 0.7rem; color: var(--text-dim); line-height: 1.8; margin-top: 0.5rem; }
-
   .status-bar { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: var(--bg); border: 1px solid var(--border); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.05em; }
   .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
   .status-dot.green { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
   .status-dot.yellow { background: var(--warn); }
   .status-dot.red { background: var(--danger); }
-
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-
   .drop-zone { border: 1px dashed var(--border); padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; overflow: hidden; }
   .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-glow); }
   .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .drop-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.5; }
   .drop-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; }
-
   .send-btns { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
-
   .file-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
   .file-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: var(--bg); border: 1px solid var(--border); font-size: 0.75rem; }
   .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
@@ -117,12 +80,10 @@
   .file-type { font-size: 0.6rem; padding: 0.15rem 0.4rem; border: 1px solid var(--border); color: var(--muted); flex-shrink: 0; }
   .file-remove { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 0 0.25rem; line-height: 1; flex-shrink: 0; }
   .file-remove:hover { background: none; color: var(--danger); box-shadow: none; }
-
   .progress-wrap { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
   .progress-header { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
   .progress-track { height: 4px; background: var(--border); overflow: hidden; }
   .progress-fill { height: 100%; background: var(--accent); box-shadow: 0 0 8px var(--accent); width: 0%; transition: width 0.1s linear; }
-
   .log { background: var(--bg); border: 1px solid var(--border); padding: 1rem; font-size: 0.65rem; color: var(--text-dim); max-height: 140px; overflow-y: auto; line-height: 2; letter-spacing: 0.03em; }
   .log-entry { display: flex; gap: 0.75rem; }
   .log-time { color: var(--muted); flex-shrink: 0; }
@@ -130,21 +91,16 @@
   .log-msg.warn { color: var(--warn); }
   .log-msg.err { color: var(--danger); }
   .log-msg.info { color: var(--text-dim); }
-
   .dl-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: var(--bg); border: 1px solid var(--accent); font-size: 0.75rem; animation: fadeIn 0.3s ease; margin-bottom: 0.5rem; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   .dl-name { flex: 1; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dl-size { color: var(--text-dim); flex-shrink: 0; }
   .dl-btn { padding: 0.35rem 0.9rem; font-size: 0.65rem; }
-
-  .section { display: none; }
-  .section.visible { display: block; }
-
+  /* Hidden until connected */
+  .hidden { display: none !important; }
   .or-divider { display: flex; align-items: center; gap: 1rem; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.2em; }
   .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
   footer { width: 100%; max-width: 760px; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: flex; justify-content: space-between; }
-
   .zipping-notice { font-size: 0.7rem; color: var(--warn); margin-top: 0.5rem; display: none; }
 </style>
 </head>
@@ -182,8 +138,8 @@
     </div>
   </div>
 
-  <!-- Send card -->
-  <div class="card section" id="sendCard">
+  <!-- Send card — hidden until connected -->
+  <div class="card hidden" id="sendCard">
     <div class="card-label">02 — Send Files &amp; Folders</div>
     <div class="drop-zone" id="dropZone">
       <span class="drop-icon">⬆</span>
@@ -192,7 +148,7 @@
     </div>
     <div class="send-btns">
       <button id="sendBtn" onclick="sendFiles()" disabled>Send All</button>
-      <button onclick="openFolderPicker()" style="border-color:var(--warn);color:var(--warn)">+ Add Folder</button>
+      <button class="btn-warn" onclick="openFolderPicker()">+ Add Folder</button>
       <button class="btn-secondary" onclick="clearFiles()">Clear</button>
     </div>
     <input type="file" id="folderInput" webkitdirectory multiple style="display:none" onchange="handleFolderSelect(this)">
@@ -207,10 +163,10 @@
     </div>
   </div>
 
-  <!-- Receive card -->
-  <div class="card section" id="recvCard">
+  <!-- Receive card — hidden until connected -->
+  <div class="card hidden" id="recvCard">
     <div class="card-label">03 — Received Files</div>
-    <p class="hint" style="margin-bottom:1rem" id="recvHint">No files received yet. Files sent by the other device will appear here.</p>
+    <p class="hint" id="recvHint" style="margin-bottom:1rem">No files received yet. Files sent by the other device will appear here.</p>
     <div class="progress-wrap" id="recvProgress" style="display:none">
       <div class="progress-header">
         <span id="recvProgressLabel">Receiving…</span>
@@ -230,19 +186,18 @@
 </main>
 
 <footer>
-  <span>RELAY v2.0</span>
+  <span>RELAY v2.1</span>
   <span>File data never touches the server</span>
 </footer>
 
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
 const CHUNK_SIZE = 16 * 1024;
-
 const WS_PROTOCOL = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_URL = `${WS_PROTOCOL}//${location.host}/ws`;
 
-// !! REPLACE the 3 values below with your Metered.ca credentials !!
-const METERED_HOST = 'YOUR_APP.relay.metered.live'; // e.g. abcd1234.relay.metered.live
+// !! REPLACE these 3 values with your Metered.ca credentials !!
+const METERED_HOST = 'YOUR_APP.relay.metered.live';
 const METERED_USER = 'YOUR_USERNAME';
 const METERED_PASS = 'YOUR_CREDENTIAL';
 
@@ -250,10 +205,10 @@ const ICE_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: `turn:${METERED_HOST}:80`,  username: METERED_USER, credential: METERED_PASS },
-    { urls: `turn:${METERED_HOST}:443`, username: METERED_USER, credential: METERED_PASS },
-    { urls: `turns:${METERED_HOST}:443`, username: METERED_USER, credential: METERED_PASS },
-    { urls: `turn:${METERED_HOST}:80?transport=tcp`,  username: METERED_USER, credential: METERED_PASS },
+    { urls: `turn:${METERED_HOST}:80`,              username: METERED_USER, credential: METERED_PASS },
+    { urls: `turn:${METERED_HOST}:443`,             username: METERED_USER, credential: METERED_PASS },
+    { urls: `turns:${METERED_HOST}:443`,            username: METERED_USER, credential: METERED_PASS },
+    { urls: `turn:${METERED_HOST}:80?transport=tcp`, username: METERED_USER, credential: METERED_PASS },
   ]
 };
 
@@ -261,6 +216,7 @@ const ICE_CONFIG = {
 let ws = null, pc = null, dc = null, role = null, roomId = null;
 let pendingFiles = [];
 let recvMeta = null, recvBuffers = [], recvReceived = 0;
+let pingInterval = null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function log(msg, type = 'info') {
@@ -290,7 +246,13 @@ function randCode() {
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
-function showSection(id) { document.getElementById(id).classList.add('visible'); }
+// Show both send and receive panels — called once WebRTC is fully connected
+function showTransferUI() {
+  document.getElementById('roomCard').classList.remove('active');
+  document.getElementById('sendCard').classList.remove('hidden');
+  document.getElementById('sendCard').classList.add('active');
+  document.getElementById('recvCard').classList.remove('hidden');
+}
 
 // ─── Room ─────────────────────────────────────────────────────────────────────
 function createRoom() {
@@ -309,20 +271,15 @@ function joinRoom() {
 }
 
 // ─── Signaling ────────────────────────────────────────────────────────────────
-let pingInterval = null;
-
 function connectSignaling(room) {
   ws = new WebSocket(`${WS_URL}/${room}`);
 
   ws.onopen = () => {
     log(`Connected to signaling server. Room: ${room}`, 'ok');
     setStatus(`In room ${room} — waiting for peer`, 'yellow');
-
-    // Send a ping every 30s to prevent Railway killing idle WebSocket connections
+    // Ping every 30s to prevent Railway killing idle WebSocket connections
     pingInterval = setInterval(() => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'ping' }));
-      }
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
     }, 30000);
   };
 
@@ -338,7 +295,7 @@ function connectSignaling(room) {
         setStatus('Peer found — connecting', 'yellow');
         if (role === 'initiator') await startWebRTC();
         break;
-      case 'offer':  await handleOffer(msg.sdp); break;
+      case 'offer':  await handleOffer(msg.sdp);  break;
       case 'answer': await handleAnswer(msg.sdp); break;
       case 'ice-candidate':
         if (pc && msg.candidate) {
@@ -346,14 +303,12 @@ function connectSignaling(room) {
         }
         break;
       case 'peer_disconnected':
-        // Only show disconnected if WebRTC is NOT already connected
-        // (avoids false alarm when signaling WS drops after transfer)
         if (!pc || pc.connectionState !== 'connected') {
           log('Peer disconnected.', 'warn');
           setStatus('Peer disconnected', 'red');
         }
         break;
-      case 'pong': break; // keepalive response, ignore
+      case 'pong': break;
       case 'error':
         log(`Server error: ${msg.message}`, 'err');
         break;
@@ -363,7 +318,6 @@ function connectSignaling(room) {
   ws.onerror = () => { log('WebSocket error.', 'err'); };
   ws.onclose = () => {
     clearInterval(pingInterval);
-    // Only log/show error if WebRTC isn't connected — otherwise transfer is still fine
     if (!pc || pc.connectionState !== 'connected') {
       log('Signaling connection closed.', 'warn');
       setStatus('Signaling disconnected', 'yellow');
@@ -396,10 +350,16 @@ async function startWebRTC() {
 
 async function handleOffer(sdp) {
   pc = new RTCPeerConnection(ICE_CONFIG);
+
   pc.onicecandidate = (e) => {
     if (e.candidate) signal({ type: 'ice-candidate', candidate: e.candidate });
   };
-  pc.ondatachannel = (e) => { dc = e.channel; setupDataChannel(dc); };
+  // Receiver gets the data channel via this event
+  pc.ondatachannel = (e) => {
+    dc = e.channel;
+    setupDataChannel(dc);
+    log('Data channel received.', 'info');
+  };
   pc.onconnectionstatechange = handleConnectionState;
 
   await pc.setRemoteDescription(new RTCSessionDescription(sdp));
@@ -419,12 +379,7 @@ function handleConnectionState() {
   log(`Connection state: ${state}`, state === 'connected' ? 'ok' : 'info');
   if (state === 'connected') {
     setStatus(`Connected to peer in room ${roomId}`, 'green');
-    document.getElementById('roomCard').classList.remove('active');
-    // Both peers can send AND receive
-    showSection('sendCard');
-    document.getElementById('sendCard').classList.add('active');
-    showSection('recvCard');
-    updateSendBtn();
+    showTransferUI();
   } else if (state === 'disconnected' || state === 'failed') {
     setStatus('Peer disconnected', 'red');
   }
@@ -433,15 +388,23 @@ function handleConnectionState() {
 // ─── Data Channel ─────────────────────────────────────────────────────────────
 function setupDataChannel(channel) {
   channel.binaryType = 'arraybuffer';
-  channel.onopen = () => { log('Data channel open — ready to transfer.', 'ok'); updateSendBtn(); };
+
+  channel.onopen = () => {
+    log('Data channel open — both devices can now send files.', 'ok');
+    // Enable send button now that the channel is confirmed open
+    document.getElementById('sendBtn').disabled = false;
+  };
+
   channel.onclose = () => log('Data channel closed.', 'warn');
   channel.onerror = (e) => log(`Data channel error: ${e.error?.message || e}`, 'err');
+
   channel.onmessage = (e) => {
     if (typeof e.data === 'string') {
       const msg = JSON.parse(e.data);
       if (msg.type === 'file-start') {
         recvMeta = msg; recvBuffers = []; recvReceived = 0;
         log(`Receiving: ${msg.name} (${formatBytes(msg.size)})`, 'info');
+        document.getElementById('recvHint').style.display = 'none';
         document.getElementById('recvProgress').style.display = 'block';
         document.getElementById('recvProgressLabel').textContent = msg.name;
         updateRecvProgress(0, msg.size);
@@ -458,7 +421,8 @@ function setupDataChannel(channel) {
 // ─── File / Folder Picking ────────────────────────────────────────────────────
 function handleFileSelect(files) {
   for (const f of files) pendingFiles.push({ file: f, label: f.name, isZip: false });
-  renderFileList(); updateSendBtn();
+  renderFileList();
+  updateSendBtn();
 }
 
 function openFolderPicker() { document.getElementById('folderInput').click(); }
@@ -476,7 +440,8 @@ async function handleFolderSelect(input) {
   const zipFile = new File([blob], zipName, { type: 'application/zip' });
   document.getElementById('zippingNotice').style.display = 'none';
   pendingFiles.push({ file: zipFile, label: `📁 ${folderName} → ${zipName}`, isZip: true });
-  renderFileList(); updateSendBtn();
+  renderFileList();
+  updateSendBtn();
   log(`Folder zipped: ${zipName} (${formatBytes(blob.size)})`, 'ok');
   input.value = '';
 }
@@ -497,8 +462,10 @@ function renderFileList() {
 
 function removeFile(i) { pendingFiles.splice(i, 1); renderFileList(); updateSendBtn(); }
 function clearFiles() { pendingFiles = []; renderFileList(); updateSendBtn(); }
+
 function updateSendBtn() {
-  document.getElementById('sendBtn').disabled = pendingFiles.length === 0 || !dc || dc.readyState !== 'open';
+  const ready = dc && dc.readyState === 'open';
+  document.getElementById('sendBtn').disabled = pendingFiles.length === 0 || !ready;
 }
 
 // ─── Sending ──────────────────────────────────────────────────────────────────
@@ -529,6 +496,10 @@ async function sendFiles() {
   document.getElementById('sendProgressLabel').textContent = 'All files sent';
   document.getElementById('sendProgressFill').style.width = '100%';
   document.getElementById('sendProgressPct').textContent = '100%';
+  // Re-enable button for next batch
+  pendingFiles = [];
+  renderFileList();
+  updateSendBtn();
 }
 
 function updateSendProgress(sent, total, name, idx, count) {
@@ -549,9 +520,6 @@ function finishReceiving() {
   const blob = new Blob(recvBuffers);
   const url = URL.createObjectURL(blob);
   const isZip = recvMeta.name.endsWith('.zip');
-  // Hide the "no files yet" hint once something arrives
-  const hint = document.getElementById('recvHint');
-  if (hint) hint.style.display = 'none';
   const el = document.getElementById('recvFileList');
   const item = document.createElement('div');
   item.className = 'dl-item';
@@ -570,7 +538,6 @@ const dz = document.getElementById('dropZone');
 dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
 dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('drag-over'); handleFileSelect(e.dataTransfer.files); });
-
 document.getElementById('joinInput').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
 </script>
 </body>
