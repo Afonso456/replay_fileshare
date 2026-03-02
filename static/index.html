@@ -209,8 +209,8 @@
 
   <!-- Receive card -->
   <div class="card section" id="recvCard">
-    <div class="card-label">02 — Receive Files</div>
-    <p class="hint" style="margin-bottom:1rem">Waiting for the sender to transmit files&hellip;</p>
+    <div class="card-label">03 — Received Files</div>
+    <p class="hint" style="margin-bottom:1rem" id="recvHint">No files received yet. Files sent by the other device will appear here.</p>
     <div class="progress-wrap" id="recvProgress" style="display:none">
       <div class="progress-header">
         <span id="recvProgressLabel">Receiving…</span>
@@ -420,14 +420,11 @@ function handleConnectionState() {
   if (state === 'connected') {
     setStatus(`Connected to peer in room ${roomId}`, 'green');
     document.getElementById('roomCard').classList.remove('active');
-    if (role === 'initiator') {
-      showSection('sendCard');
-      document.getElementById('sendCard').classList.add('active');
-      updateSendBtn();
-    } else {
-      showSection('recvCard');
-      document.getElementById('recvCard').classList.add('active');
-    }
+    // Both peers can send AND receive
+    showSection('sendCard');
+    document.getElementById('sendCard').classList.add('active');
+    showSection('recvCard');
+    updateSendBtn();
   } else if (state === 'disconnected' || state === 'failed') {
     setStatus('Peer disconnected', 'red');
   }
@@ -552,6 +549,9 @@ function finishReceiving() {
   const blob = new Blob(recvBuffers);
   const url = URL.createObjectURL(blob);
   const isZip = recvMeta.name.endsWith('.zip');
+  // Hide the "no files yet" hint once something arrives
+  const hint = document.getElementById('recvHint');
+  if (hint) hint.style.display = 'none';
   const el = document.getElementById('recvFileList');
   const item = document.createElement('div');
   item.className = 'dl-item';
